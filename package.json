@@ -1,11 +1,15 @@
 {
-  "name": "recomm",
+  "name": "ss-recomm",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.1.5",
+    "express": "^4.15.2",
+    "imdb-api": "^2.2.1",
+    "request": "^2.81.0"
+  }
 }
