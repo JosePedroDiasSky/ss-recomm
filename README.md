@@ -1,27 +1,38 @@
-# calcular heurística entre cada par de assets:
+# summary
 
-mm género
-mm realizador
-mm actor
-mm ano (abs)
-mm duracao (abs)
+## setup
 
-raizes das palavras de título e sinopse -> palavras parecidas no título/sinopse...
+    npm install
 
 
+## run
 
-# processo dada uma heurística
+    node serve.js
 
-cache de todos os assets
-recomendados para 1 asset:
-  comparar esse assets com todos os outros
-  ordenar resultados, servindo top x
-
-para cada par (combinações 2 por 2, ordenado alfab)
-  pode ser cached para reutilização...
+visit <http://127.0.0.1:3000/d6bd31cd-e0a3-4372-9c49-d52d1f83554e> (assetId of The Matrix movie)
 
 
+# Project ROADMAP
 
-# expor servidor http q para um dado id de asset, retorna n recomendados
+## server
 
-# alterar aplicação de modo a mostrar recomendados na página de pdp
+* receive list of entitlementIds to remove/penalize in the results
+* change sorting, filter min heuristic threshold (>0?) and sort by IMDB rating instead
+* (one would have to correlate assets between SS and IMDB by title?!)
+* check NOWTV catalog and each asset features. requires user account (AV?)
+
+
+## clients
+
+* in the PDP page (for web and android), do a request to this server and display a list of suggested items
+
+
+## presentation
+
+* IMPORT LEROLERO
+
+
+# Resources to check out
+
+* <https://github.com/NaturalNode/natural>
+* <http://ac.els-cdn.com/S0888613X10000460/1-s2.0-S0888613X10000460-main.pdf?_tid=f6f02252-09a7-11e7-922a-00000aab0f26&acdnat=1489600446_dbe9e879a875f4af7c44bd287eedc15d>

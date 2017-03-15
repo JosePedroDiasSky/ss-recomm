@@ -1,3 +1,5 @@
+'use strict';
+
 const CFG = require('./config.json');
 
 const fs = require('fs');
@@ -143,18 +145,18 @@ function simplifyAsset(o) {
   return {
     a: new Set( o.actors    ? o.actors.map(_getId)    : [] ),
     d: new Set( o.directors ? o.directors.map(_getId) : [] ),
-    g: new Set( o.genres    ? o.genres.map(_getId)    : [] ),
-    s: new Set( o.shortSynopsis  ? o.shortSynopsis.map(_getId)  : [] )
+    g: new Set( o.genres    ? o.genres.map(_getId)    : [] )/*,
+    s: new Set( o.shortSynopsis  ? o.shortSynopsis.map(_getId)  : [] )*/
   }
 }
 
-function tf(doc, term) {
-  var result = 0;
-  var parts = doc.split(' ');
-  //TODO: Exclude stop words and punctuation
-  for(var part of parts) {
-    if(part.toLowerCase() === term.toLowerCase())){
-      result++;
+/*function tf(doc, term) {
+  let result = 0;
+  const parts = doc.split(' ');
+  // TODO: Exclude stop words and punctuation
+  for (let part of parts) {
+    if(part.toLowerCase() === term.toLowerCase()) {
+      ++result;
     }
   }
   return result / parts.length;
@@ -162,7 +164,7 @@ function tf(doc, term) {
 
 function idf(docs, term) {
   var result = 0;
-  for(var doc of docs) {
+  for (var doc of docs) {
     var parts = doc.split(' ');
     for(var part of parts) {
       if(part.toLowerCase() === term.toLowerCase()){
@@ -177,7 +179,7 @@ function idf(docs, term) {
 
 function tfIdf(doc, docs, term){
   return tf(doc term) * idf(docs, term);
-}
+}*/
 
 function _sig(n) { return (n < 0 ? -1 : (n > 0 ? 1 : 0) ); }
 function _byV(a, b) { return _sig(a.v - b.v); }
@@ -247,45 +249,69 @@ function h1(A, B) {
 
 
 
-console.log('loading...');
-readAllAssets(function(err, o) {
-  console.log('running...');
+function run(cb) {
+  readAllAssets(function(err, o) {
+    if (err) { return cb(null); }
 
-  /*const a1 = o.get('d6bd31cd-e0a3-4372-9c49-d52d1f83554e');
-  const a2 = o.get('fcdef8e2-273f-446a-b934-9ccf0da07fa2');
-  const v = h1(a1, a2);
-  console.log(v);*/
+    function doRecommendations(assetId, topN, cb) { // 'd6bd31cd-e0a3-4372-9c49-d52d1f83554e', 10
+      const results = applyHeuristic(o, assetId, h1, topN);
+      //console.log(results);
+      const ids = results.map(function(r) { return r.i; });
+      async.mapLimit(
+        ids, // coll
+        8, // limit
+        readAsset, // iteratee
+        function(err, assets) {
+          if (err) { return cb(null); }
 
-  const results = applyHeuristic(o, 'd6bd31cd-e0a3-4372-9c49-d52d1f83554e', h1, 10);
-  //console.log(results);
-  const ids = results.map(function(r) { return r.i; });
-  async.mapLimit(
-    ids, // coll
-    8, // limit
-    readAsset, // iteratee
-    function(err, assets) {
-      if (err) { throw err; }
-      assets.forEach(function(a, idx) {
-        const result = results[idx];
-        console.log('\n------- %sth v:%s id:%s', idx+1, result.v, result.i);
-        console.log('TITLE: %s', a.title);
-        console.log('ACTORS: %s', a.actors.map(_getName).join(', '));
-        console.log('DIRECTORS: %s', a.directors.map(_getName).join(', '));
-        console.log('GENRES: %s', a.genres.map(_getLabel).join(', '));
-      });
+          const results2 = assets.map(function(a, idx) {
+            const result = results[idx];
+            return {
+              value: result.v,
+              asset: a
+            };
+          });
+
+          cb(null, results2);
+        }
+      );
     }
-  );
-});
+
+    cb(null, doRecommendations);
+  });
+}
+
+
+module.exports = run;
 
 
 
-module.exports = {
-  readAllAssets: readAllAssets
-};
-
-
-
-/*
-r = require('./index')
-r.readAllAssets(function(err, o) { global.o = o; console.log('done'); })
-*/
+// console.log('loading...');
+// readAllAssets(function(err, o) {
+//   console.log('running...');
+//
+//   // const a1 = o.get('d6bd31cd-e0a3-4372-9c49-d52d1f83554e');
+//   // const a2 = o.get('fcdef8e2-273f-446a-b934-9ccf0da07fa2');
+//   // const v = h1(a1, a2);
+//   // console.log(v);
+//
+//   const results = applyHeuristic(o, 'd6bd31cd-e0a3-4372-9c49-d52d1f83554e', h1, 10);
+//   //console.log(results);
+//   const ids = results.map(function(r) { return r.i; });
+//   async.mapLimit(
+//     ids, // coll
+//     8, // limit
+//     readAsset, // iteratee
+//     function(err, assets) {
+//       if (err) { throw err; }
+//       assets.forEach(function(a, idx) {
+//         const result = results[idx];
+//         console.log('\n------- %sth v:%s id:%s', idx+1, result.v, result.i);
+//         console.log('TITLE: %s', a.title);
+//         console.log('ACTORS: %s', a.actors.map(_getName).join(', '));
+//         console.log('DIRECTORS: %s', a.directors.map(_getName).join(', '));
+//         console.log('GENRES: %s', a.genres.map(_getLabel).join(', '));
+//       });
+//     }
+//   );
+// });
