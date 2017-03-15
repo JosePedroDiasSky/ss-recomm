@@ -143,11 +143,41 @@ function simplifyAsset(o) {
   return {
     a: new Set( o.actors    ? o.actors.map(_getId)    : [] ),
     d: new Set( o.directors ? o.directors.map(_getId) : [] ),
-    g: new Set( o.genres    ? o.genres.map(_getId)    : [] )
+    g: new Set( o.genres    ? o.genres.map(_getId)    : [] ),
+    s: new Set( o.shortSynopsis  ? o.shortSynopsis.map(_getId)  : [] )
   }
 }
 
+function tf(doc, term) {
+  var result = 0;
+  var parts = doc.split(' ');
+  //TODO: Exclude stop words and punctuation
+  for(var part of parts) {
+    if(part.toLowerCase() === term.toLowerCase())){
+      result++;
+    }
+  }
+  return result / parts.length;
+}
 
+function idf(docs, term) {
+  var result = 0;
+  for(var doc of docs) {
+    var parts = doc.split(' ');
+    for(var part of parts) {
+      if(part.toLowerCase() === term.toLowerCase()){
+        result++;
+        break;
+      }
+    }
+  }
+  var weight = docs.length/result;
+  return weight > 0 ? Math.log(weight) : 0;
+}
+
+function tfIdf(doc, docs, term){
+  return tf(doc term) * idf(docs, term);
+}
 
 function _sig(n) { return (n < 0 ? -1 : (n > 0 ? 1 : 0) ); }
 function _byV(a, b) { return _sig(a.v - b.v); }
