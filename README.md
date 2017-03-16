@@ -12,6 +12,11 @@
 visit <http://127.0.0.1:3000/d6bd31cd-e0a3-4372-9c49-d52d1f83554e> (assetId of The Matrix movie)
 
 
+## remote run:
+
+visit <https://stage.sl.pt/d6bd31cd-e0a3-4372-9c49-d52d1f83554e>
+
+
 # Project ROADMAP
 
 ## server
@@ -34,5 +39,7 @@ visit <http://127.0.0.1:3000/d6bd31cd-e0a3-4372-9c49-d52d1f83554e> (assetId of T
 
 # Resources to check out
 
+* <https://github.com/worr/node-imdb-api>
 * <https://github.com/NaturalNode/natural>
-* <http://ac.els-cdn.com/S0888613X10000460/1-s2.0-S0888613X10000460-main.pdf?_tid=f6f02252-09a7-11e7-922a-00000aab0f26&acdnat=1489600446_dbe9e879a875f4af7c44bd287eedc15d>
+* <https://www.npmjs.com/package/auto-sni>
+*  <http://ac.els-cdn.com/S0888613X10000460/1-s2.0-S0888613X10000460-main.pdf?_tid=f6f02252-09a7-11e7-922a-00000aab0f26&acdnat=1489600446_dbe9e879a875f4af7c44bd287eedc15d>
