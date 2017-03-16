@@ -2,6 +2,7 @@
 
 const createServer = require('auto-sni'); // let's encrypt https cert thingie
 const express = require('express');
+const cors = require('cors');
 
 const run = require('./index');
 
@@ -11,6 +12,8 @@ run(function(err, doRecommendations) {
   console.log('catalog data res');
 
   const app = express();
+
+  app.use(cors());
 
   app.get('/:aid', function (req, res) {
     doRecommendations(req.params.aid, 10, function(err, results) {
