@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const request = require('request'); // https://github.com/request/request
 const async = require('async'); // http://caolan.github.io/async/ https://github.com/caolan/async
-
+const _ = require('lodash');
 
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set#Implementing_basic_set_operations
@@ -192,7 +192,7 @@ function applyHeuristic(assetMap, aId, heuristicFn, topN) {
     if (k === aId) { continue; }
     const a2 = assetMap.get(k);
     //const v = heuristicFn(a1, a2); if (v > 0) { console.log(k, v); }
-    arr.push({i:k, v:heuristicFn(a1, a2)});
+    arr.push({i:k, v:heuristicFn(a1, a2), w:a2.why});
   }
   arr.sort(_byV_);
   return arr.slice(0, topN);
@@ -203,11 +203,50 @@ function applyHeuristic(assetMap, aId, heuristicFn, topN) {
 // d6bd31cd-e0a3-4372-9c49-d52d1f83554e the matrix
 // fcdef8e2-273f-446a-b934-9ccf0da07fa2 the matrix reloaded
 // 77567476-81de-42b6-bf09-eb0e53e7f139 the matrix revolutions
-function h1(A, B) {
+function h0(A, B) {
   let n = 0;
   n += 10 * A.a.intersectionCount(B.a);
   n +=  6 * A.d.intersectionCount(B.d);
   n +=      A.g.intersectionCount(B.g);
+  return n;
+}
+
+function h00(A, B) {
+  let n = 0;
+  const numA = A.a.intersectionCount(B.a);
+  const numD = A.d.intersectionCount(B.d);
+  const numG = A.g.intersectionCount(B.g);
+  B.why = [numA, numD, numG];
+  n += 10 * numA;
+  n +=  6 * numD;
+  n +=      numG;
+  return n;
+}
+
+function h000(A, B) {
+  let n = 0;
+  const numA = Array.from( A.a.intersection(B.a) );
+  const numD = Array.from( A.d.intersection(B.d) );
+  const numG = Array.from( A.g.intersection(B.g) );
+  B.why = [numA, numD, numG];
+  n += 10 * numA.length;
+  n +=  6 * numD.length;
+  n +=      numG.length;
+  return n;
+}
+
+function h1(A, B) {
+  let n = 0;
+  const bagA = Array.from( A.a.intersection(B.a) );
+  const bagD = Array.from( A.d.intersection(B.d) );
+  const bagG = Array.from( A.g.intersection(B.g) );
+  B.why = [bagA, bagD, bagG];
+  const l = bagA.length;
+  bagA.forEach(function(actor, i) {
+    n += 10 * (l-i)/l;
+  });
+  n += 10 * bagD.length;
+  n +=      bagG.length;
   return n;
 }
 
@@ -247,6 +286,29 @@ function h1(A, B) {
   console.log(err || 'OK!');
 });*/
 
+function pluralize(word, n) {
+  return word + (n !== 1 ? 's' : '');
+}
+
+function joinWords(arr) {
+  arr = arr.slice();
+  const last = arr.pop();
+  return (arr.length > 0) ? `${arr.join(', ')} and ${last}` : last;
+}
+
+function getSuggestionReason(value) {
+  const arr = [];
+  if (value.actors.length > 0) {
+    arr.push( joinWords(value.actors) + ' also starred' );
+  }
+  if (value.directors.length > 0) {
+    arr.push( joinWords(value.directors) + ' also directed' );
+  }
+  if (value.genres.length > 0) {
+    arr.push( 'have similar ' + pluralize('genre', value.genres.length) );
+  }
+  return joinWords(arr);
+}
 
 
 function run(cb) {
@@ -266,8 +328,15 @@ function run(cb) {
 
           const results2 = assets.map(function(a, idx) {
             const result = results[idx];
+            // console.log(result);
+            const value = {
+              actors    : result.w[0].map(function(aId) { return _.find(a.actors, function(actor) { return actor.id === aId; }).name }),
+              directors : result.w[1].map(function(aId) { return _.find(a.directors, function(actor) { return actor.id === aId; }).name }),
+              genres    : result.w[2].map(function(aId) { return _.find(a.genres, function(actor) { return actor.id === aId; }).label })
+            };
             return {
-              value: result.v,
+              reason: getSuggestionReason(value),
+              value: value,
               asset: a
             };
           });
