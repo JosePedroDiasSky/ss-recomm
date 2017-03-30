@@ -4,7 +4,7 @@ const createServer = require('auto-sni'); // let's encrypt https cert thingie
 const express = require('express');
 const cors = require('cors');
 
-const run = require('./index');
+const run = require('./index').run;
 
 
 

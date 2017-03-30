@@ -100,17 +100,14 @@ function readAsset(aId, cb) {
 
 
 
-function updateAllAssets(cb) {
-  readCatalog(function(err, assets) {
-    if (err) { throw err; }
-    const ids = assets.map(function(a) { return a.id; });
-    async.eachLimit(
-      ids, // coll
-      8, // limit
-      updateAsset, // iteratee
-      cb
-    );
-  });
+function updateAllAssets(assets, cb) {
+  const ids = assets.map(function(a) { return a.id; });
+  async.eachLimit(
+    ids, // coll
+    8, // limit
+    updateAsset, // iteratee
+    cb
+  );
 }
 
 
@@ -143,9 +140,9 @@ function _getLabel(o) { return o.label; }
 
 function simplifyAsset(o) {
   return {
-    a: new Set( o.actors    ? o.actors.map(_getId)    : [] ),
-    d: new Set( o.directors ? o.directors.map(_getId) : [] ),
-    g: new Set( o.genres    ? o.genres.map(_getId)    : [] )/*,
+    a: new Set( o.actors    ? o.actors.map(_getId).slice(0,3)    : [] ),
+    d: new Set( o.directors ? o.directors.map(_getId).slice(0,3) : [] ),
+    g: new Set( o.genres    ? o.genres.map(_getId).slice(0,3)    : [] )/*,
     s: new Set( o.shortSynopsis  ? o.shortSynopsis.map(_getId)  : [] )*/
   }
 }
@@ -305,7 +302,7 @@ function getSuggestionReason(value) {
     arr.push( joinWords(value.directors) + ' also directed' );
   }
   if (value.genres.length > 0) {
-    arr.push( 'have similar ' + pluralize('genre', value.genres.length) );
+    arr.push( 'has similar ' + pluralize('genre', value.genres.length) );
   }
   return joinWords(arr);
 }
@@ -351,36 +348,17 @@ function run(cb) {
 }
 
 
-module.exports = run;
+
+function rip(cb) {
+  updateCatalog(function(err, assets) {
+    if (err) { return cb(err); }
+    updateAllAssets(assets, cb);
+  });
+}
 
 
 
-// console.log('loading...');
-// readAllAssets(function(err, o) {
-//   console.log('running...');
-//
-//   // const a1 = o.get('d6bd31cd-e0a3-4372-9c49-d52d1f83554e');
-//   // const a2 = o.get('fcdef8e2-273f-446a-b934-9ccf0da07fa2');
-//   // const v = h1(a1, a2);
-//   // console.log(v);
-//
-//   const results = applyHeuristic(o, 'd6bd31cd-e0a3-4372-9c49-d52d1f83554e', h1, 10);
-//   //console.log(results);
-//   const ids = results.map(function(r) { return r.i; });
-//   async.mapLimit(
-//     ids, // coll
-//     8, // limit
-//     readAsset, // iteratee
-//     function(err, assets) {
-//       if (err) { throw err; }
-//       assets.forEach(function(a, idx) {
-//         const result = results[idx];
-//         console.log('\n------- %sth v:%s id:%s', idx+1, result.v, result.i);
-//         console.log('TITLE: %s', a.title);
-//         console.log('ACTORS: %s', a.actors.map(_getName).join(', '));
-//         console.log('DIRECTORS: %s', a.directors.map(_getName).join(', '));
-//         console.log('GENRES: %s', a.genres.map(_getLabel).join(', '));
-//       });
-//     }
-//   );
-// });
+module.exports = {
+  run : run,
+  rip : rip
+};
