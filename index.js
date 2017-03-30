@@ -312,7 +312,7 @@ function run(cb) {
   readAllAssets(function(err, o) {
     if (err) { return cb(null); }
 
-    function doRecommendations(assetId, topN, cb) { // 'd6bd31cd-e0a3-4372-9c49-d52d1f83554e', 10
+    function suggest(assetId, topN, cb) { // 'd6bd31cd-e0a3-4372-9c49-d52d1f83554e', 10
       const results = applyHeuristic(o, assetId, h1, topN);
       //console.log(results);
       const ids = results.map(function(r) { return r.i; });
@@ -343,7 +343,19 @@ function run(cb) {
       );
     }
 
-    cb(null, doRecommendations);
+    function autocomplete(needle, top, cb) {
+      setTimeout(function() {
+        cb(null, [needle, needle])
+      }, 100);
+    }
+
+    cb(
+      null,
+      {
+        suggest      : suggest,
+        autocomplete : autocomplete
+      }
+    );
   });
 }
 

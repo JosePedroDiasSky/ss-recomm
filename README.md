@@ -9,12 +9,12 @@
 
     node serve.js
 
-visit <http://127.0.0.1:3000/d6bd31cd-e0a3-4372-9c49-d52d1f83554e> (assetId of The Matrix movie)
+visit <http://127.0.0.1:3000/suggest/d6bd31cd-e0a3-4372-9c49-d52d1f83554e> (assetId of The Matrix movie)
 
 
 ## remote run:
 
-visit <https://stage.sl.pt/d6bd31cd-e0a3-4372-9c49-d52d1f83554e>
+visit <https://stage.sl.pt/suggest/d6bd31cd-e0a3-4372-9c49-d52d1f83554e>
 
 
 # Project ROADMAP
