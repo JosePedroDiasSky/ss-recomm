@@ -7,6 +7,8 @@ const fs = require('fs');
 const request = require('request'); // https://github.com/request/request
 const async = require('async'); // http://caolan.github.io/async/ https://github.com/caolan/async
 const _ = require('lodash');
+const lunr = require('lunr');
+
 
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set#Implementing_basic_set_operations
@@ -113,20 +115,20 @@ function updateAllAssets(assets, cb) {
 
 
 function readAllAssets(cb) {
-  readCatalog(function(err, assets) {
+  readCatalog(function(err, assetsArr) {
     if (err) { return cb(err); }
-    const ids = assets.map(function(a) { return a.id; });
+    const ids = assetsArr.map(function(a) { return a.id; });
     async.mapLimit(
       ids, // coll
       8, // limit
       readAsset, // iteratee
-      function(err, arr) {
+      function(err, assetsRichArr) {
         if (err) { return cb(err); }
-        const o = new Map(); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
-        arr.forEach(function(a) {
-          o.set(a.id, simplifyAsset(a));
+        const suggestMap = new Map(); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
+        assetsRichArr.forEach(function(a) {
+          suggestMap.set(a.id, simplifyAsset(a));
         });
-        cb(null, o);
+        cb(null, assetsRichArr, suggestMap);
       }
     );
   });
@@ -309,11 +311,11 @@ function getSuggestionReason(value) {
 
 
 function run(cb) {
-  readAllAssets(function(err, o) {
+  readAllAssets(function(err, assetsArr, suggestMap) {
     if (err) { return cb(null); }
 
     function suggest(assetId, topN, cb) { // 'd6bd31cd-e0a3-4372-9c49-d52d1f83554e', 10
-      const results = applyHeuristic(o, assetId, h1, topN);
+      const results = applyHeuristic(suggestMap, assetId, h1, topN);
       //console.log(results);
       const ids = results.map(function(r) { return r.i; });
       async.mapLimit(
@@ -343,10 +345,35 @@ function run(cb) {
       );
     }
 
+    const index = lunr(function() {
+      this.field('title', {boost: 10});
+      this.field('synopsis');
+      this.ref('id');
+    });
+
+    const suggMap = new Map();
+
+    assetsArr.forEach(function(a) {
+      suggMap.set(a.id, {id:a.id, title:a.title});
+      index.add({
+        id       : a.id,
+        title    : a.title,
+        synopsis : a.synopsis
+      });
+    });
+
     function autocomplete(needle, top, cb) {
       setTimeout(function() {
-        cb(null, [needle, needle])
-      }, 100);
+        const res = index
+        .search(needle)
+        .slice(0, top)
+        .map(function(result) {
+          return suggMap.get(result.ref);
+        });
+
+        // console.log(res);
+        cb(null, res);
+      }, 0);
     }
 
     cb(
