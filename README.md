@@ -5,39 +5,41 @@
     npm install
 
 
-## run
+## rip data
+
+    node rip.js
+
+it stores the data into `cache` directory
+
+
+
+## stats usage
+
+    node serve.js
+
+
+three additional files besides the catalog asset responses get saved into the `cache` dir:
+
+    trailer.json
+    subtitles.json
+    multiple-audio.json
+
+
+one can also save the stdout:
+
+    node serve > summary.txt
+
+
+## API usage
 
     node serve.js
 
 visit <http://127.0.0.1:3000/suggest/d6bd31cd-e0a3-4372-9c49-d52d1f83554e> (assetId of The Matrix movie)
 
-
-## remote run:
-
 visit <https://stage.sl.pt/suggest/d6bd31cd-e0a3-4372-9c49-d52d1f83554e>
 
 
-# Project ROADMAP
-
-## server
-
-* receive list of entitlementIds to remove/penalize in the results
-* change sorting, filter min heuristic threshold (>0?) and sort by IMDB rating instead
-* (one would have to correlate assets between SS and IMDB by title?!)
-* check NOWTV catalog and each asset features. requires user account (AV?)
-
-
-## clients
-
-* in the PDP page (for web and android), do a request to this server and display a list of suggested items
-
-
-## presentation
-
-* IMPORT LEROLERO
-
-
-# Resources to check out
+# Resources
 
 * <https://github.com/worr/node-imdb-api>
 * <https://github.com/NaturalNode/natural>
