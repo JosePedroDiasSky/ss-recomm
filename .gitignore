@@ -1,4 +1,4 @@
 node_modules
 nohup.out
-cache
+cache*
 summary.txt

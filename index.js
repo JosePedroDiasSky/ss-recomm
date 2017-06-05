@@ -1,6 +1,9 @@
 'use strict';
 
-const CFG = require('./config-de-prod.json');
+// const CFG = require('./config-uk-prod.json'); const CACHE_DIR = 'cache-uk-prod';
+// const CFG = require('./config-de-prod.json'); const CACHE_DIR = 'cache-de-prod';
+const CFG = require('./config-de-test.json'); const CACHE_DIR = 'cache-de-test';
+
 
 const fs = require('fs');
 
@@ -38,7 +41,7 @@ function updateCatalog(cb) {
     function(err, res, body) {
       if (err) { return cb(err); }
       const assets = JSON.parse(body).content.assets;
-      fs.writeFile('cache/catalog.json', JSON.stringify(assets), function(err) {
+      fs.writeFile(CACHE_DIR + '/catalog.json', JSON.stringify(assets), function(err) {
         if (err) { return cb(err); }
         cb(null, assets);
       });
@@ -49,7 +52,7 @@ function updateCatalog(cb) {
 
 
 function readCatalog(cb) {
-  fs.readFile('cache/catalog.json', function(err, st) {
+  fs.readFile(CACHE_DIR + '/catalog.json', function(err, st) {
     if (err) { return cb(err); }
     cb(null, JSON.parse( st.toString() ));
   })
@@ -65,7 +68,7 @@ function updateAsset(aId, cb) {
     function(err, res, body) {
       if (err) { return cb(err); }
       const asset = JSON.parse(body).content;;
-      fs.writeFile(`cache/${aId}.json`, JSON.stringify(asset), function(err) {
+      fs.writeFile(`${CACHE_DIR}/${aId}.json`, JSON.stringify(asset), function(err) {
         if (err) { return cb(err); }
         cb(null, asset);
       });
@@ -83,7 +86,7 @@ function updateAsset(aId, cb) {
     function(err, res, body) {
       if (err) { return cb(err); }
       const asset = JSON.parse(body).content;;
-      fs.writeFile(`cache/${aId}.json`, JSON.stringify(asset), function(err) {
+      fs.writeFile(`${CACHE_DIR}/${aId}.json`, JSON.stringify(asset), function(err) {
         if (err) { return cb(err); }
         cb(null, asset);
       });
@@ -94,7 +97,7 @@ function updateAsset(aId, cb) {
 
 
 function readAsset(aId, cb) {
-  fs.readFile(`cache/${aId}.json`, function(err, st) {
+  fs.readFile(`${CACHE_DIR}/${aId}.json`, function(err, st) {
     if (err) { return cb(err); }
     cb(null, JSON.parse( st.toString() ));
   })
@@ -117,10 +120,10 @@ function tf(o) {
   return o ? 'T' : 'F';
 }
 
-
-const hasMultipleAudio = new Set();
-const hasSubtitles = new Set();
 const hasTrailer = new Set();
+const hasSubtitles = new Set();
+const hasMultipleSubtitles = new Set();
+const hasMultipleAudio = new Set();
 
 function visitForFeatures(ass) {
   const hasTr = ('trailers' in ass);
@@ -143,6 +146,7 @@ function visitForFeatures(ass) {
   subs = Array.from( subs.keys() );
 
   const hasMAudios = audios.length > 1;
+  const hasMSubs = subs.length > 1;
   const hasSubs = subs.length > 0;
 
   console.log(`title       : "${ass.title}" (${ass.id})
@@ -151,9 +155,10 @@ mult audios : ${tf(hasMAudios)} ${audios.join(',')}
 subtitles   : ${tf(hasSubs)} ${subs.join(',')}
 --------`);
 
-  if (hasTr) {      hasTrailer.add(         ass.id ); }
-  if (hasMAudios) { hasMultipleAudio.add(   ass.id ); }
-  if (hasSubs) {    hasSubtitles.add(       ass.id ); }
+  if (hasTr) {      hasTrailer.add(           ass.id ); }
+  if (hasSubs) {    hasSubtitles.add(         ass.id ); }
+  if (hasMSubs) {   hasMultipleSubtitles.add( ass.id ); }
+  if (hasMAudios) { hasMultipleAudio.add(     ass.id ); }
 }
 
 
@@ -175,20 +180,24 @@ function readAllAssets(cb) {
           suggestMap.set(a.id, simplifyAsset(a));
         });
 
+        const xt = Array.from( hasTrailer.keys() );
+        fs.writeFileSync(CACHE_DIR + '/trailer.json', JSON.stringify(xt, null, 2) );
+
         const xs = Array.from( hasSubtitles.keys() );
-        fs.writeFileSync('cache/subtitles.json', JSON.stringify(xs, null, 2) );
+        fs.writeFileSync(CACHE_DIR + '/subtitles.json', JSON.stringify(xs, null, 2) );
+
+        const xms = Array.from( hasMultipleSubtitles.keys() );
+        fs.writeFileSync(CACHE_DIR + '/multiple-subtitles.json', JSON.stringify(xms, null, 2) );
 
         const xma = Array.from( hasMultipleAudio.keys() );
-        fs.writeFileSync('cache/multiple-audio.json', JSON.stringify(xma, null, 2) );
-
-        const xt = Array.from( hasTrailer.keys() );
-        fs.writeFileSync('cache/trailer.json', JSON.stringify(xt, null, 2) );
+        fs.writeFileSync(CACHE_DIR + '/multiple-audio.json', JSON.stringify(xma, null, 2) );
 
         console.log(`
-          # assets         : ${assetsRichArr.length}
-          # w/ trailer     : ${xt.length}
-          # w/ subtitles   : ${xs.length}
-          # w/ mult. audio : ${xma.length}
+          # assets             : ${assetsRichArr.length}
+          # w/ trailer         : ${xt.length}
+          # w/ subtitles       : ${xs.length}
+          # w/ mult. subtitles : ${xms.length}
+          # w/ mult. audio     : ${xma.length}
         `);
 
         cb(null, assetsRichArr, suggestMap);
