@@ -9,16 +9,16 @@
 
     node rip.js
 
-it stores the data into `cache` directory
+it stores the data into `CACHE_DIR` directory
 
 
 
 ## stats usage
 
-    node serve.js
+    node stats.js
 
 
-three additional files besides the catalog asset responses get saved into the `cache` dir:
+three additional files besides the catalog asset responses get saved into the `CACHE_DIR` dir:
 
     trailer.json
     subtitles.json
@@ -27,7 +27,7 @@ three additional files besides the catalog asset responses get saved into the `c
 
 one can also save the stdout:
 
-    node serve > summary.txt
+    node stats > summary.txt
 
 
 ## API usage

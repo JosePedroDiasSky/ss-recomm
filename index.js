@@ -1,8 +1,8 @@
 'use strict';
 
 // const CFG = require('./config-uk-prod.json'); const CACHE_DIR = 'cache-uk-prod';
-// const CFG = require('./config-de-prod.json'); const CACHE_DIR = 'cache-de-prod';
-const CFG = require('./config-de-test.json'); const CACHE_DIR = 'cache-de-test';
+const CFG = require('./config-de-prod.json'); const CACHE_DIR = 'cache-de-prod';
+// const CFG = require('./config-de-test.json'); const CACHE_DIR = 'cache-de-test';
 
 
 const fs = require('fs');
@@ -78,24 +78,6 @@ function updateAsset(aId, cb) {
 
 
 
-function updateAsset(aId, cb) {
-  request(
-    {
-      url: `${CFG.endpoint}/${aId}?api_key=${CFG.apiKey}`,
-    },
-    function(err, res, body) {
-      if (err) { return cb(err); }
-      const asset = JSON.parse(body).content;;
-      fs.writeFile(`${CACHE_DIR}/${aId}.json`, JSON.stringify(asset), function(err) {
-        if (err) { return cb(err); }
-        cb(null, asset);
-      });
-    }
-  )
-}
-
-
-
 function readAsset(aId, cb) {
   fs.readFile(`${CACHE_DIR}/${aId}.json`, function(err, st) {
     if (err) { return cb(err); }
@@ -116,50 +98,23 @@ function updateAllAssets(assets, cb) {
 }
 
 
-function tf(o) {
-  return o ? 'T' : 'F';
+
+function readAllAssetsFull(cb) {
+  readCatalog(function(err, assetsArr) {
+    if (err) { return cb(err); }
+    const ids = assetsArr.map(function(a) { return a.id; });
+    async.mapLimit(
+      ids, // coll
+      8, // limit
+      readAsset, // iteratee
+      function(err, assetsRichArr) {
+        if (err) { return cb(err); }
+        cb(null, assetsRichArr);
+      }
+    )
+  });
 }
 
-const hasTrailer = new Set();
-const hasSubtitles = new Set();
-const hasMultipleSubtitles = new Set();
-const hasMultipleAudio = new Set();
-
-function visitForFeatures(ass) {
-  const hasTr = ('trailers' in ass);
-
-  let audios = new Set();
-  let subs = new Set();
-  if ('offers' in ass) {
-    ass.offers.forEach(function(o) {
-      const o2 = o.videoOptions.options;
-      if ('audios' in o2) {
-        o2.audios.forEach(function(au) { audios.add(au.name) });
-      }
-      if ('subtitles' in o2) {
-        o2.subtitles.forEach(function(su) { subs.add(su.name) });
-      }
-    });
-  }
-
-  audios = Array.from( audios.keys() );
-  subs = Array.from( subs.keys() );
-
-  const hasMAudios = audios.length > 1;
-  const hasMSubs = subs.length > 1;
-  const hasSubs = subs.length > 0;
-
-  console.log(`title       : "${ass.title}" (${ass.id})
-trailer     : ${tf(hasTr)}
-mult audios : ${tf(hasMAudios)} ${audios.join(',')}
-subtitles   : ${tf(hasSubs)} ${subs.join(',')}
---------`);
-
-  if (hasTr) {      hasTrailer.add(           ass.id ); }
-  if (hasSubs) {    hasSubtitles.add(         ass.id ); }
-  if (hasMSubs) {   hasMultipleSubtitles.add( ass.id ); }
-  if (hasMAudios) { hasMultipleAudio.add(     ass.id ); }
-}
 
 
 function readAllAssets(cb) {
@@ -174,32 +129,8 @@ function readAllAssets(cb) {
         if (err) { return cb(err); }
         const suggestMap = new Map(); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
         assetsRichArr.forEach(function(a) {
-
-          visitForFeatures(a);
-
           suggestMap.set(a.id, simplifyAsset(a));
         });
-
-        const xt = Array.from( hasTrailer.keys() );
-        fs.writeFileSync(CACHE_DIR + '/trailer.json', JSON.stringify(xt, null, 2) );
-
-        const xs = Array.from( hasSubtitles.keys() );
-        fs.writeFileSync(CACHE_DIR + '/subtitles.json', JSON.stringify(xs, null, 2) );
-
-        const xms = Array.from( hasMultipleSubtitles.keys() );
-        fs.writeFileSync(CACHE_DIR + '/multiple-subtitles.json', JSON.stringify(xms, null, 2) );
-
-        const xma = Array.from( hasMultipleAudio.keys() );
-        fs.writeFileSync(CACHE_DIR + '/multiple-audio.json', JSON.stringify(xma, null, 2) );
-
-        console.log(`
-          # assets             : ${assetsRichArr.length}
-          # w/ trailer         : ${xt.length}
-          # w/ subtitles       : ${xs.length}
-          # w/ mult. subtitles : ${xms.length}
-          # w/ mult. audio     : ${xma.length}
-        `);
-
         cb(null, assetsRichArr, suggestMap);
       }
     );
@@ -216,41 +147,11 @@ function simplifyAsset(o) {
   return {
     a: new Set( o.actors    ? o.actors.map(_getId).slice(0,3)    : [] ),
     d: new Set( o.directors ? o.directors.map(_getId).slice(0,3) : [] ),
-    g: new Set( o.genres    ? o.genres.map(_getId).slice(0,3)    : [] )/*,
-    s: new Set( o.shortSynopsis  ? o.shortSynopsis.map(_getId)  : [] )*/
+    g: new Set( o.genres    ? o.genres.map(_getId).slice(0,3)    : [] )
   }
 }
 
-/*function tf(doc, term) {
-  let result = 0;
-  const parts = doc.split(' ');
-  // TODO: Exclude stop words and punctuation
-  for (let part of parts) {
-    if(part.toLowerCase() === term.toLowerCase()) {
-      ++result;
-    }
-  }
-  return result / parts.length;
-}
 
-function idf(docs, term) {
-  var result = 0;
-  for (var doc of docs) {
-    var parts = doc.split(' ');
-    for(var part of parts) {
-      if(part.toLowerCase() === term.toLowerCase()){
-        result++;
-        break;
-      }
-    }
-  }
-  var weight = docs.length/result;
-  return weight > 0 ? Math.log(weight) : 0;
-}
-
-function tfIdf(doc, docs, term){
-  return tf(doc term) * idf(docs, term);
-}*/
 
 function _sig(n) { return (n < 0 ? -1 : (n > 0 ? 1 : 0) ); }
 function _byV(a, b) { return _sig(a.v - b.v); }
@@ -322,40 +223,6 @@ function h1(A, B) {
 }
 
 
-
-/*readCatalog(function(err, o) {
-  if (err) { throw err; }
-  const s = new Set(); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
-  o.forEach(function(a) {
-    //if (a.title.toLowerCase().indexOf('lego') !== -1) {
-    //  console.log(a.title, a.id);
-    //}
-    s.add(a.assetType);
-    //console.log(a.title);
-  });
-  console.log( Array.from(s) );
-});*/
-
-
-
-/*updateAsset('0ed1d6ef-8378-4472-a6db-501faffd3e89', function(err, a) {
-  if (err) { throw err; }
-  // title
-  // actors[].name/id
-  // directors[].name/id
-  // ratings[].title/id
-  // genres[].label/id
-  // duration (nr)
-  // year (nr)
-  // lastUpdateDate (date)
-  // catalogSection - Movies Entertainment
-  // assetType - Programme Boxset
-  console.log(a);
-});*/
-
-/*updateAllAssets(function(err) {
-  console.log(err || 'OK!');
-});*/
 
 function pluralize(word, n) {
   return word + (n !== 1 ? 's' : '');
@@ -468,8 +335,9 @@ function rip(cb) {
 }
 
 
-
 module.exports = {
-  run : run,
-  rip : rip
+  run   : run,
+  rip   : rip,
+  readAllAssetsFull : readAllAssetsFull,
+  CACHE_DIR : CACHE_DIR
 };
