@@ -5,6 +5,14 @@
     npm install
 
 
+## validate/change store-env pair
+
+* edit `CFG` and `CACHE_DIR` constants in `index.js`
+
+* create/edit relevant `config-<store>-<env>.json` file
+
+
+
 ## rip data
 
     node rip.js
