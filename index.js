@@ -1,6 +1,6 @@
 'use strict';
 
-const CFG = require('./config.json');
+const CFG = require('./config-de-prod.json');
 
 const fs = require('fs');
 
@@ -113,6 +113,49 @@ function updateAllAssets(assets, cb) {
 }
 
 
+function tf(o) {
+  return o ? 'T' : 'F';
+}
+
+
+const hasMultipleAudio = new Set();
+const hasSubtitles = new Set();
+const hasTrailer = new Set();
+
+function visitForFeatures(ass) {
+  const hasTr = ('trailers' in ass);
+
+  let audios = new Set();
+  let subs = new Set();
+  if ('offers' in ass) {
+    ass.offers.forEach(function(o) {
+      const o2 = o.videoOptions.options;
+      if ('audios' in o2) {
+        o2.audios.forEach(function(au) { audios.add(au.name) });
+      }
+      if ('subtitles' in o2) {
+        o2.subtitles.forEach(function(su) { subs.add(su.name) });
+      }
+    });
+  }
+
+  audios = Array.from( audios.keys() );
+  subs = Array.from( subs.keys() );
+
+  const hasMAudios = audios.length > 1;
+  const hasSubs = subs.length > 0;
+
+  console.log(`title       : "${ass.title}" (${ass.id})
+trailer     : ${tf(hasTr)}
+mult audios : ${tf(hasMAudios)} ${audios.join(',')}
+subtitles   : ${tf(hasSubs)} ${subs.join(',')}
+--------`);
+
+  if (hasTr) {      hasTrailer.add(         ass.id ); }
+  if (hasMAudios) { hasMultipleAudio.add(   ass.id ); }
+  if (hasSubs) {    hasSubtitles.add(       ass.id ); }
+}
+
 
 function readAllAssets(cb) {
   readCatalog(function(err, assetsArr) {
@@ -126,8 +169,28 @@ function readAllAssets(cb) {
         if (err) { return cb(err); }
         const suggestMap = new Map(); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
         assetsRichArr.forEach(function(a) {
+
+          visitForFeatures(a);
+
           suggestMap.set(a.id, simplifyAsset(a));
         });
+
+        const xs = Array.from( hasSubtitles.keys() );
+        fs.writeFileSync('cache/subtitles.json', JSON.stringify(xs, null, 2) );
+
+        const xma = Array.from( hasMultipleAudio.keys() );
+        fs.writeFileSync('cache/multiple-audio.json', JSON.stringify(xma, null, 2) );
+
+        const xt = Array.from( hasTrailer.keys() );
+        fs.writeFileSync('cache/trailer.json', JSON.stringify(xt, null, 2) );
+
+        console.log(`
+          # assets         : ${assetsRichArr.length}
+          # w/ trailer     : ${xt.length}
+          # w/ subtitles   : ${xs.length}
+          # w/ mult. audio : ${xma.length}
+        `);
+
         cb(null, assetsRichArr, suggestMap);
       }
     );
