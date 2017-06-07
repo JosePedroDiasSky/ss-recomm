@@ -1,7 +1,8 @@
 'use strict';
 
+const CFG = require('./config-uk-qs.json'); const CACHE_DIR = 'cache-uk-qs';
 // const CFG = require('./config-uk-prod.json'); const CACHE_DIR = 'cache-uk-prod';
-const CFG = require('./config-de-prod.json'); const CACHE_DIR = 'cache-de-prod';
+// const CFG = require('./config-de-prod.json'); const CACHE_DIR = 'cache-de-prod';
 // const CFG = require('./config-de-test.json'); const CACHE_DIR = 'cache-de-test';
 
 

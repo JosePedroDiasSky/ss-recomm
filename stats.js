@@ -2,6 +2,8 @@
 
 const fs = require('fs');
 
+const _ = require('lodash');
+
 const index = require('./index');
 const CACHE_DIR = index.CACHE_DIR;
 const readAllAssetsFull = index.readAllAssetsFull;
@@ -63,6 +65,17 @@ readAllAssetsFull(function(err, assetsFullArr) {
     if (err) { return cb(null); }
 
     assetsFullArr.forEach(visitForFeatures);
+
+    let durations = assetsFullArr.map(function(ass) {
+      return {
+        t: ass.title,
+        d: ass.duration,
+        i: ass.id
+      };
+    });
+    _.remove(durations, {d:0});
+    durations = _.sortBy(durations, 'd');
+    fs.writeFileSync(CACHE_DIR + '/durations.json', JSON.stringify(durations, null, 2) );
 
     const xt = Array.from( hasTrailer.keys() );
     fs.writeFileSync(CACHE_DIR + '/trailer.json', JSON.stringify(xt, null, 2) );
